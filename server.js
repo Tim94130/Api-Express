@@ -42,9 +42,12 @@ const isServiceOpenAt = (mins) =>
 app.get('/next-metro', (req, res) => {
   const station = (req.query.station ?? '').toString().trim();
   if (!station) {
-    // ✅ message exact demandé
-    return res.status(400).json({ error: 'missing station' });
-  }
+  return res.status(400).json({
+    error: 'missing station',
+    hint: 'Use /next-metro?station=Chatelet'
+  });
+}
+
 
   const now = nowParis();
   const mins = minutesSinceMidnight(now);
