@@ -1,0 +1,166 @@
+openapi: 3.0.3
+info:
+  title: Dernier Métro — Paris (MVP)
+  version: 1.0.0
+  description: |
+    Mini-API qui indique l'heure de la prochaine rame et si c'est la dernière.
+    Plage de service: 05:30 → 01:15 (J+1). Fréquence: 3 minutes.
+    Hors plage: **200 { service: "closed" }**.
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: System
+    description: Endpoints système (santé)
+  - name: Metro
+    description: Calcul prochain métro
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Healthcheck
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+
+  /api/health:
+    get:
+      tags: [System]
+      summary: Healthcheck (alias)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+
+  /next-metro:
+    get:
+      tags: [Metro]
+      summary: Prochain métro pour une station
+      description: |
+        Retourne l'heure de la prochaine rame **arrondie** à la fréquence (3 min) et si c'est la dernière.
+        - **Required**: `station` (query)
+        - Hors plage de service (05:30 → 01:15) → `200 { service: "closed", tz: "Europe/Paris" }`
+      parameters:
+        - $ref: "#/components/parameters/StationQuery"
+      responses:
+        "200":
+          description: Résultat ou service fermé
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NextMetroResponse"
+                  - $ref: "#/components/schemas/ServiceClosedResponse"
+              examples:
+                ok:
+                  summary: Service ouvert
+                  value:
+                    station: Chatelet
+                    line: M1
+                    headwayMin: 3
+                    nextArrival: "14:24"
+                    isLast: false
+                    tz: Europe/Paris
+                closed:
+                  summary: Service fermé
+                  value:
+                    service: closed
+                    tz: Europe/Paris
+        "400":
+          description: Paramètre manquant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: missing station
+                hint: Use /next-metro?station=Chatelet
+        "404":
+          description: Non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Not Found
+
+components:
+  parameters:
+    StationQuery:
+      name: station
+      in: query
+      required: true
+      description: Nom de la station (ex. "Chatelet")
+      schema:
+        type: string
+        example: Chatelet
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+      required: [status]
+
+    NextMetroResponse:
+      type: object
+      properties:
+        station:
+          type: string
+          example: Chatelet
+        line:
+          type: string
+          example: M1
+        headwayMin:
+          type: integer
+          minimum: 1
+          example: 3
+        nextArrival:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+          example: "14:24"
+        isLast:
+          type: boolean
+          example: false
+        tz:
+          type: string
+          enum: [Europe/Paris]
+          example: Europe/Paris
+      required: [station, line, headwayMin, nextArrival, isLast, tz]
+
+    ServiceClosedResponse:
+      type: object
+      properties:
+        service:
+          type: string
+          enum: [closed]
+          example: closed
+        tz:
+          type: string
+          enum: [Europe/Paris]
+          example: Europe/Paris
+      required: [service, tz]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: missing station
+        hint:
+          type: string
+          example: Use /next-metro?station=Chatelet
+      required: [error]

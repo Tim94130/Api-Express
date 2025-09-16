@@ -1,8 +1,25 @@
 import 'dotenv/config';
 import express from 'express';
 import { DateTime } from 'luxon';
+import swaggerUi from 'swagger-ui-express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import YAML from 'yaml';
 
-const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// charge le fichier OpenAPI YAML
+const openapiPath = path.join(__dirname, 'openapi.yaml');
+const openapiDoc = YAML.parse(fs.readFileSync(openapiPath, 'utf8'));
+
+const app = express(); // <<< d’abord créer app
+
+// ensuite brancher swagger
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiDoc));
+app.get('/openapi.json', (_req, res) => res.json(openapiDoc));
+
 const TZ = 'Europe/Paris';
 const HEADWAY_MIN = 3;
 const SERVICE_START_MIN = 5 * 60 + 30; // 05:30

@@ -13,7 +13,9 @@
   "dependencies": {
     "dotenv": "^17.2.2",
     "express": "^4.19.2",
-    "luxon": "^3.7.2"
+    "luxon": "^3.7.2",
+    "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
