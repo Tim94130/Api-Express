@@ -12,7 +12,7 @@ tags:
   - name: System
     description: Endpoints système (santé)
   - name: Metro
-    description: Calcul prochain métro
+    description: Calcul prochain et dernier métro
 
 paths:
   /health:
@@ -95,6 +95,55 @@ paths:
               example:
                 error: Not Found
 
+  /last-metro:
+    get:
+      tags: [Metro]
+      summary: Dernier métro pour une station
+      description: |
+        Retourne l'heure du **dernier métro** pour une station donnée.
+        - **Required**: `station` (query, insensible à la casse).
+        - Données lues depuis la table `config` :
+          - `metro.defaults` → { line, tz }
+          - `metro.last` → { NomStation: "HH:MM" }
+      parameters:
+        - $ref: "#/components/parameters/StationQuery"
+      responses:
+        "200":
+          description: Dernier métro trouvé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LastMetroResponse"
+              example:
+                station: Chatelet
+                lastMetro: "01:05"
+                line: M1
+                tz: Europe/Paris
+        "400":
+          description: Paramètre manquant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: missing station
+        "404":
+          description: Station inconnue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: unknown station
+        "500":
+          description: Erreur interne
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: internal error
+
 components:
   parameters:
     StationQuery:
@@ -140,6 +189,25 @@ components:
           enum: [Europe/Paris]
           example: Europe/Paris
       required: [station, line, headwayMin, nextArrival, isLast, tz]
+
+    LastMetroResponse:
+      type: object
+      properties:
+        station:
+          type: string
+          example: Chatelet
+        lastMetro:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+          example: "01:05"
+        line:
+          type: string
+          example: M1
+        tz:
+          type: string
+          enum: [Europe/Paris]
+          example: Europe/Paris
+      required: [station, lastMetro, line, tz]
 
     ServiceClosedResponse:
       type: object

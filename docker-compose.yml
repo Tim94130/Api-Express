@@ -3,17 +3,34 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: npm run dev            # utilise nodemon
-    environment:
-      - NODE_ENV=development
-      - PORT=3000
+    command: npm run dev
+    env_file:
+      - .env
     ports:
       - "3000:3000"
     volumes:
-      - .:/app                      # monte ton code
-      - /app/node_modules           # évite d'écraser node_modules du conteneur
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - db
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 10s
       timeout: 2s
       retries: 5
+
+  db:
+    image: postgres:16
+    restart: always
+    environment:               # 👈 ici en dur pour être sûr
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: metrodb
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  pgdata:
